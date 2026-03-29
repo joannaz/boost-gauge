@@ -86,7 +86,7 @@ uint16_t rgb(uint8_t r, uint8_t g, uint8_t b) {
   return spr.color565(r, g, b);
 }
 
-// Wider sweep, less cramped
+// 8 o'clock to 3 o'clock
 float psiToAngle(float psi) {
   psi = constrain(psi, -10.0f, 40.0f);
   return mapf(psi, -10.0f, 40.0f, 150.0f, 360.0f);
@@ -98,35 +98,42 @@ void polarToXY(float angleDeg, int radius, int &x, int &y) {
   y = CY + sinf(a) * radius;
 }
 
+void drawSoftPixelRing(float angleDeg, int r1, int r2, uint16_t col) {
+  int x, y;
+  for (int r = r1; r <= r2; r++) {
+    polarToXY(angleDeg, r, x, y);
+    spr.drawPixel(x, y, col);
+  }
+}
+
 void drawBezel() {
   spr.fillScreen(TFT_BLACK);
 
-  spr.fillCircle(CX, CY, 118, rgb(30, 30, 34));
-  spr.fillCircle(CX, CY, 114, rgb(10, 10, 12));
+  spr.fillCircle(CX, CY, 118, rgb(24, 24, 28));
+  spr.fillCircle(CX, CY, 114, rgb(6, 6, 8));
   spr.drawCircle(CX, CY, 116, rgb(72, 72, 80));
-  spr.drawCircle(CX, CY, 115, rgb(50, 50, 56));
-  spr.drawCircle(CX, CY, 113, rgb(22, 22, 28));
+  spr.drawCircle(CX, CY, 115, rgb(48, 48, 54));
+  spr.drawCircle(CX, CY, 113, rgb(18, 18, 22));
 
-  spr.fillCircle(CX, CY, 104, rgb(8, 8, 14));
+  spr.fillCircle(CX, CY, 104, rgb(10, 10, 16));
 }
 
 void drawArcBand() {
   for (int p = -10; p <= 40; p++) {
     float a = psiToAngle((float)p);
-    int x1, y1, x2, y2;
 
-    uint16_t col;
     if (p <= 0) {
-      col = TFT_WHITE;
+      drawSoftPixelRing(a, 84, 87, rgb(70, 70, 76));
+      drawSoftPixelRing(a, 88, 96, rgb(205, 205, 214));
+      drawSoftPixelRing(a, 97, 106, rgb(255, 255, 255));
     } else if (p < 30) {
-      col = rgb(145, 80, 255);
+      drawSoftPixelRing(a, 84, 87, rgb(40, 22, 72));
+      drawSoftPixelRing(a, 88, 96, rgb(105, 62, 205));
+      drawSoftPixelRing(a, 97, 106, rgb(185, 145, 255));
     } else {
-      col = TFT_WHITE;
-    }
-
-    for (int r = 88; r <= 103; r++) {
-      polarToXY(a, r, x1, y1);
-      spr.drawPixel(x1, y1, col);
+      drawSoftPixelRing(a, 84, 87, rgb(70, 70, 76));
+      drawSoftPixelRing(a, 88, 96, rgb(205, 205, 214));
+      drawSoftPixelRing(a, 97, 106, rgb(255, 255, 255));
     }
   }
 }
@@ -134,49 +141,49 @@ void drawArcBand() {
 void drawTicks() {
   for (int p = -10; p <= 40; p += 2) {
     float a = psiToAngle((float)p);
-
     bool major = (p % 10 == 0);
-    int r1 = major ? 66 : 76;
-    int r2 = 100;
+
+    int r1 = major ? 68 : 80;
+    int r2 = 102;
 
     int x1, y1, x2, y2;
     polarToXY(a, r1, x1, y1);
     polarToXY(a, r2, x2, y2);
 
-    uint16_t c = major ? TFT_WHITE : rgb(180, 180, 200);
-    spr.drawLine(x1, y1, x2, y2, c);
+    if (major) {
+      spr.drawLine(x1, y1, x2, y2, rgb(150, 150, 160));
+      spr.drawLine(x1 + 1, y1, x2 + 1, y2, TFT_WHITE);
+    } else {
+      spr.drawLine(x1, y1, x2, y2, rgb(90, 90, 104));
+    }
   }
 }
 
 void drawLabels() {
   spr.setTextDatum(middle_center);
 
-  // Outer PSI labels only
   spr.setFont(&fonts::Font4);
-  spr.setTextColor(TFT_WHITE, rgb(8, 8, 14));
+  spr.setTextColor(TFT_WHITE, rgb(10, 10, 16));
 
-  const int psiVals[] = {-10, 0, 10, 20, 30, 40};
-  const char* psiTxt[] = {"-10", "0", "10", "20", "30", "40"};
+  const int psiVals[] = {0, 10, 20, 30, 40};
+  const char* psiTxt[] = {"0", "10", "20", "30", "40"};
 
-  for (int i = 0; i < 6; i++) {
+  for (int i = 0; i < 5; i++) {
     int x, y;
-    polarToXY(psiToAngle(psiVals[i]), 60, x, y);  // slightly pushed out
+    polarToXY(psiToAngle(psiVals[i]), 58, x, y);
     spr.drawString(psiTxt[i], x, y);
   }
 
-  // PSI label
   spr.setFont(&fonts::Font2);
-  spr.setTextColor(TFT_WHITE, rgb(8, 8, 14));
-  spr.drawString("psi", 185, 138);
-
-  // BOOST label
-  spr.setFont(&fonts::Font4);
+  spr.setTextColor(rgb(220, 220, 228), rgb(10, 10, 16));
+  spr.drawString("psi", 184, 146);
 }
 
 void drawHub() {
-  spr.fillCircle(CX, CY, 24, rgb(20, 20, 30));
-  spr.fillCircle(CX, CY, 17, rgb(60, 80, 220));
-  spr.fillCircle(CX, CY, 9, rgb(18, 18, 24));
+  spr.fillCircle(CX, CY, 18, rgb(18, 18, 24));
+  spr.fillCircle(CX, CY, 13, rgb(42, 34, 62));
+  spr.fillCircle(CX, CY, 7, rgb(10, 10, 14));
+  spr.drawCircle(CX, CY, 18, rgb(68, 68, 76));
 }
 
 void drawNeedle(float psi) {
@@ -184,80 +191,42 @@ void drawNeedle(float psi) {
 
   int tipX, tipY, leftX, leftY, rightX, rightY;
 
-  // glow layer
-  polarToXY(a, 64, tipX, tipY);
-  polarToXY(a + 90.0f, 5, leftX, leftY);
-  polarToXY(a - 90.0f, 5, rightX, rightY);
-  spr.fillTriangle(leftX, leftY, rightX, rightY, tipX, tipY, rgb(120, 90, 255));
-  spr.fillCircle(CX, CY, 6, rgb(120, 90, 255));
+  polarToXY(a, 72, tipX, tipY);
+  polarToXY(a + 90.0f, 9, leftX, leftY);
+  polarToXY(a - 90.0f, 9, rightX, rightY);
+  spr.fillTriangle(leftX, leftY, rightX, rightY, tipX, tipY, rgb(32, 18, 60));
 
-  // white needle
-  polarToXY(a, 62, tipX, tipY);
-  polarToXY(a + 90.0f, 2, leftX, leftY);
-  polarToXY(a - 90.0f, 2, rightX, rightY);
+  polarToXY(a, 69, tipX, tipY);
+  polarToXY(a + 90.0f, 6, leftX, leftY);
+  polarToXY(a - 90.0f, 6, rightX, rightY);
+  spr.fillTriangle(leftX, leftY, rightX, rightY, tipX, tipY, rgb(110, 82, 220));
+
+  polarToXY(a, 65, tipX, tipY);
+  polarToXY(a + 90.0f, 3, leftX, leftY);
+  polarToXY(a - 90.0f, 3, rightX, rightY);
   spr.fillTriangle(leftX, leftY, rightX, rightY, tipX, tipY, TFT_WHITE);
-  spr.fillCircle(CX, CY, 4, TFT_WHITE);
+
+  spr.fillCircle(CX, CY, 7, rgb(32, 18, 60));
+  spr.fillCircle(CX, CY, 5, rgb(110, 82, 220));
+  spr.fillCircle(CX, CY, 3, TFT_WHITE);
 }
 
 void drawValueBox(float psi) {
-  spr.fillRoundRect(16, 184, 64, 24, 5, rgb(16, 16, 20));
-  spr.drawRoundRect(16, 184, 64, 24, 5, rgb(58, 58, 70));
+  int boxW = 90;
+  int boxH = 36;
+  int x = CX - boxW / 2;
+  int y = 175;
+
+  spr.fillRoundRect(x, y, boxW, boxH, 8, rgb(14, 14, 18));
+  spr.drawRoundRect(x, y, boxW, boxH, 8, rgb(60, 60, 70));
 
   spr.setTextDatum(middle_center);
-  spr.setFont(&fonts::Font2);
-  spr.setTextColor(TFT_WHITE, rgb(16, 16, 20));
+  spr.setFont(&fonts::Font4);
+  spr.setTextColor(TFT_WHITE, rgb(14, 14, 18));
 
   char buf[12];
   snprintf(buf, sizeof(buf), "%.1f", psi);
-  spr.drawString(buf, 48, 196);
-}
-
-void drawTurboIcon(int x, int y, float s = 1.0f) {
-  uint16_t shell      = rgb(210, 210, 220);
-  uint16_t inner      = rgb(120, 90, 255);
-  uint16_t dark       = rgb(30, 30, 40);
-  uint16_t highlight  = TFT_WHITE;
-
-  int rOuter = (int)(14 * s);
-  int rInner = (int)(8 * s);
-  int pipeW  = (int)(8 * s);
-  int pipeH  = (int)(6 * s);
-
-  // Main turbo housing
-  spr.fillCircle(x, y, rOuter, shell);
-  spr.fillCircle(x, y, rInner, dark);
-
-  // Compressor outlet "snail nose" to the right
-  spr.fillRoundRect(x + (int)(8 * s), y - (int)(4 * s), (int)(12 * s), pipeH, (int)(2 * s), shell);
-
-  // Inlet / exhaust pipe on lower left
-  spr.fillRoundRect(x - (int)(18 * s), y + (int)(6 * s), (int)(12 * s), pipeH, (int)(2 * s), shell);
-
-  // Inner purple compressor glow
-  spr.fillCircle(x, y, (int)(5 * s), inner);
-
-  // Center hub
-  spr.fillCircle(x, y, (int)(2 * s), highlight);
-
-  // Three simple blades
-  for (int i = 0; i < 3; i++) {
-    float a = (-30 + i * 120) * DEG_TO_RAD;
-    int x1 = x + (int)(cosf(a) * (2 * s));
-    int y1 = y + (int)(sinf(a) * (2 * s));
-    int x2 = x + (int)(cosf(a + 0.45f) * (6 * s));
-    int y2 = y + (int)(sinf(a + 0.45f) * (6 * s));
-    int x3 = x + (int)(cosf(a - 0.20f) * (4 * s));
-    int y3 = y + (int)(sinf(a - 0.20f) * (4 * s));
-    spr.fillTriangle(x1, y1, x2, y2, x3, y3, highlight);
-  }
-
-  // Small cut-out to make the housing look more like a snail
-  spr.fillCircle(x + (int)(9 * s), y - (int)(9 * s), (int)(5 * s), rgb(8, 8, 14));
-
-  // Outline accents
-  spr.drawCircle(x, y, rOuter, rgb(90, 90, 100));
-  spr.drawRoundRect(x + (int)(8 * s), y - (int)(4 * s), (int)(12 * s), pipeH, (int)(2 * s), rgb(90, 90, 100));
-  spr.drawRoundRect(x - (int)(18 * s), y + (int)(6 * s), (int)(12 * s), pipeH, (int)(2 * s), rgb(90, 90, 100));
+  spr.drawString(buf, CX, y + boxH / 2);
 }
 
 void renderGauge(float psi) {
@@ -268,7 +237,6 @@ void renderGauge(float psi) {
   drawNeedle(psi);
   drawHub();
   drawValueBox(psi);
-  drawTurboIcon(190, 188, 0.9f);
   spr.pushSprite(0, 0);
 }
 
@@ -286,7 +254,9 @@ float readPsiSmoothed() {
   if (count <= 0) count = 1;
 
   float sum = 0.0f;
-  for (int i = 0; i < count; i++) sum += psiHistory[i];
+  for (int i = 0; i < count; i++) {
+    sum += psiHistory[i];
+  }
 
   psi = sum / count;
   return constrain(psi, -10.0f, 40.0f);
@@ -303,9 +273,9 @@ void sweepSegment(float startPsi, float endPsi, int steps, int stepDelayMs) {
 }
 
 void startupSweep() {
-  sweepSegment(0.0f, 40.0f, 40, 10);
-  sweepSegment(40.0f, -10.0f, 45, 10);
-  sweepSegment(-10.0f, 0.0f, 20, 10);
+  sweepSegment(0.0f, 40.0f, 30, 6);
+  sweepSegment(40.0f, -10.0f, 34, 6);
+  sweepSegment(-10.0f, 0.0f, 16, 6);
 }
 
 void setup() {
@@ -319,7 +289,12 @@ void setup() {
   pinMode(4, INPUT);
 
   spr.setColorDepth(16);
-  spr.createSprite(240, 240);
+  if (!spr.createSprite(240, 240)) {
+    tft.fillScreen(TFT_RED);
+    delay(1000);
+    tft.fillScreen(TFT_BLACK);
+    return;
+  }
 
   renderGauge(0.0f);
   startupSweep();
@@ -327,7 +302,7 @@ void setup() {
 
 void loop() {
   float targetPsi = readPsiSmoothed();
-  displayedPsi += (targetPsi - displayedPsi) * 0.12f;
+  displayedPsi += (targetPsi - displayedPsi) * 0.22f;
   renderGauge(displayedPsi);
-  delay(40);
+  delay(20);
 }
